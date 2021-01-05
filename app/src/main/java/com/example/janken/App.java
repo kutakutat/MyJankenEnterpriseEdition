@@ -1,5 +1,8 @@
 package com.example.janken;
 
+import com.example.janken.model.*;
+import lombok.val;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,25 +19,13 @@ public class App {
     private static final int PLAYER_1_ID = 1;
     private static final int PLAYER_2_ID = 2;
 
-    private static final int STONE_NUM = 0;
-    private static final int PAPER_NUM = 1;
-    private static final int SCISSORS_NUM = 2;
-
-    private static final String STONE_STR = "STONE";
-    private static final String PAPER_STR = "PAPER";
-    private static final String SCISSORS_STR = "SCISSORS";
-
-    private static final int WIN = 0;
-    private static final int LOSE = 1;
-    private static final int DRAW = 2;
-
     // 表示するメッセージの形式定義
 
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     private static final String SCAN_PROMPT_MESSAGE_FORMAT = String.join(LINE_SEPARATOR,
-            STONE_STR + ": " + STONE_NUM,
-            PAPER_STR + ": " + PAPER_NUM,
-            SCISSORS_STR + ": " + SCISSORS_NUM,
+            Hand.STONE.getName() + ": " + Hand.STONE.getValue(),
+            Hand.PAPER.getName() + ": " + Hand.PAPER.getValue(),
+            Hand.SCISSORS.getName() + ": " + Hand.SCISSORS.getValue(),
             "Please select {0} hand:");
     private static final String INVALID_INPUT_MESSAGE_FORMAT = "Invalid input: {0}" + LINE_SEPARATOR;
     private static final String SHOW_HAND_MESSAGE_FORMAT = "{0} selected {1}";
@@ -60,13 +51,13 @@ public class App {
 
         // プレイヤー名を取得
 
-        String player1Name = findPlayerNameById(PLAYER_1_ID);
-        String player2Name = findPlayerNameById(PLAYER_2_ID);
+        val player1Name = findPlayerNameById(PLAYER_1_ID);
+        val player2Name = findPlayerNameById(PLAYER_2_ID);
 
         // プレイヤーの手を取得
 
-        int player1Hand = scanHand(player1Name);
-        int player2Hand = scanHand(player2Name);
+        val player1Hand = scanHand(player1Name);
+        val player2Hand = scanHand(player2Name);
 
         showHandWithName(player1Hand, player1Name);
         showHandWithName(player2Hand, player2Name);
@@ -75,46 +66,46 @@ public class App {
 
         int player1Result;
         int player2Result;
-        if (player1Hand == STONE_NUM) {
+        if (player1Hand == Hand.STONE.getValue()) {
             // プレイヤーがグーの場合
 
-            if (player2Hand == STONE_NUM) {
-                player1Result = DRAW;
-                player2Result = DRAW;
-            } else if (player2Hand == PAPER_NUM) {
-                player1Result = LOSE;
-                player2Result = WIN;
+            if (player2Hand == Hand.STONE.getValue()) {
+                player1Result = Result.DRAW.getValue();
+                player2Result = Result.DRAW.getValue();
+            } else if (player2Hand == Hand.PAPER.getValue()) {
+                player1Result = Result.LOSE.getValue();
+                player2Result = Result.WIN.getValue();
             } else {
-                player1Result = WIN;
-                player2Result = LOSE;
+                player1Result = Result.WIN.getValue();
+                player2Result = Result.LOSE.getValue();
             }
 
-        } else if (player1Hand == PAPER_NUM) {
+        } else if (player1Hand == Hand.PAPER.getValue()) {
             // プレイヤーがパーの場合
 
-            if (player2Hand == STONE_NUM) {
-                player1Result = WIN;
-                player2Result = LOSE;
-            } else if (player2Hand == PAPER_NUM) {
-                player1Result = DRAW;
-                player2Result = DRAW;
+            if (player2Hand == Hand.STONE.getValue()) {
+                player1Result = Result.WIN.getValue();
+                player2Result = Result.LOSE.getValue();
+            } else if (player2Hand == Hand.PAPER.getValue()) {
+                player1Result = Result.DRAW.getValue();
+                player2Result = Result.DRAW.getValue();
             } else {
-                player1Result = LOSE;
-                player2Result = WIN;
+                player1Result = Result.LOSE.getValue();
+                player2Result = Result.WIN.getValue();
             }
 
         } else {
             // プレイヤーがチョキの場合
 
-            if (player2Hand == STONE_NUM) {
-                player1Result = LOSE;
-                player2Result = WIN;
-            } else if (player2Hand == PAPER_NUM) {
-                player1Result = WIN;
-                player2Result = LOSE;
+            if (player2Hand == Hand.STONE.getValue()) {
+                player1Result = Result.LOSE.getValue();
+                player2Result = Result.WIN.getValue();
+            } else if (player2Hand == Hand.PAPER.getValue()) {
+                player1Result = Result.WIN.getValue();
+                player2Result = Result.LOSE.getValue();
             } else {
-                player1Result = DRAW;
-                player2Result = DRAW;
+                player1Result = Result.DRAW.getValue();
+                player2Result = Result.DRAW.getValue();
             }
         }
 
@@ -148,9 +139,9 @@ public class App {
         // 勝敗の表示
 
         String resultMessage;
-        if (player1Result == WIN) {
+        if (player1Result == Result.WIN.getValue()) {
             resultMessage = MessageFormat.format(WINNING_MESSAGE_FORMAT, player1Name);
-        } else if (player2Result == WIN) {
+        } else if (player2Result == Result.WIN.getValue()) {
             resultMessage = MessageFormat.format(WINNING_MESSAGE_FORMAT, player2Name);
         } else {
             resultMessage = DRAW_MESSAGE;
@@ -159,20 +150,19 @@ public class App {
         System.out.println(resultMessage);
     }
 
-    private static String findPlayerNameById(int playerId) throws IOException {
-        try (Stream<String> stream = Files.lines(Paths.get(PLAYERS_CSV), StandardCharsets.UTF_8)) {
+    private static String findPlayerNameById(long playerId) throws IOException {
+        try (val stream = Files.lines(Paths.get(PLAYERS_CSV), StandardCharsets.UTF_8)) {
             return stream
-                    // ID で検索
-                    .filter(line -> {
-                        String[] values = line.split(CSV_DELIMITER);
-                        int id = Integer.parseInt(values[0]);
-                        return id == playerId;
-                    })
-                    // 名前のみに変換
                     .map(line -> {
-                        String[] values = line.split(CSV_DELIMITER);
-                        return values[1];
+                        val values = line.split(CSV_DELIMITER);
+                        val id = Long.parseLong(values[0]);
+                        val name = values[1];
+                        return new Player(id, name);
                     })
+                    // ID で検索
+                    .filter(p -> p.getId() == playerId)
+                    // 名前のみに変換
+                    .map(Player::getName)
                     .findFirst()
                     .orElseThrow(() -> {
                         throw new IllegalArgumentException("Player not exist. playerId = " + playerId);
@@ -192,9 +182,9 @@ public class App {
             String inputStr = STDIN_SCANNER.nextLine();
 
             // 有効な文字列だけ受け付ける
-            if (inputStr.equals(String.valueOf(STONE_NUM))
-                    || inputStr.equals(String.valueOf(PAPER_NUM))
-                    || inputStr.equals(String.valueOf(SCISSORS_NUM))) {
+            if (inputStr.equals(String.valueOf(Hand.STONE.getValue()))
+                    || inputStr.equals(String.valueOf(Hand.PAPER.getValue()))
+                    || inputStr.equals(String.valueOf(Hand.SCISSORS.getValue()))) {
                 return Integer.parseInt(inputStr);
 
             } else {
@@ -205,12 +195,12 @@ public class App {
 
     private static void showHandWithName(int hand, String name) {
         String handStr;
-        if (hand == STONE_NUM) {
-            handStr = STONE_STR;
-        } else if (hand == PAPER_NUM) {
-            handStr = PAPER_STR;
+        if (hand == Hand.STONE.getValue()) {
+            handStr = Hand.STONE.getName();
+        } else if (hand == Hand.PAPER.getValue()) {
+            handStr = Hand.PAPER.getName();
         } else {
-            handStr = SCISSORS_STR;
+            handStr = Hand.SCISSORS.getName();
         }
 
         System.out.println(MessageFormat.format(SHOW_HAND_MESSAGE_FORMAT, name, handStr));

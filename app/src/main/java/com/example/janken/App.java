@@ -10,14 +10,14 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Scanner;
-import java.util.stream.Stream;
 
 public class App {
 
     // ID は実際のアプリケーションでは認証情報から取得することが想定される
-    private static final int PLAYER_1_ID = 1;
-    private static final int PLAYER_2_ID = 2;
+    private static final long PLAYER_1_ID = 1;
+    private static final long PLAYER_2_ID = 2;
 
     // 表示するメッセージの形式定義
 
@@ -64,84 +64,99 @@ public class App {
 
         // 勝敗判定
 
-        int player1Result;
-        int player2Result;
-        if (player1Hand == Hand.STONE.getValue()) {
+        Result player1Result;
+        Result player2Result;
+        if (player1Hand.equals(Hand.STONE)) {
             // プレイヤーがグーの場合
 
-            if (player2Hand == Hand.STONE.getValue()) {
-                player1Result = Result.DRAW.getValue();
-                player2Result = Result.DRAW.getValue();
-            } else if (player2Hand == Hand.PAPER.getValue()) {
-                player1Result = Result.LOSE.getValue();
-                player2Result = Result.WIN.getValue();
+            if (player2Hand.equals(Hand.STONE)) {
+                player1Result = Result.DRAW;
+                player2Result = Result.DRAW;
+            } else if (player2Hand.equals(Hand.PAPER)) {
+                player1Result = Result.LOSE;
+                player2Result = Result.WIN;
             } else {
-                player1Result = Result.WIN.getValue();
-                player2Result = Result.LOSE.getValue();
+                player1Result = Result.WIN;
+                player2Result = Result.LOSE;
             }
 
-        } else if (player1Hand == Hand.PAPER.getValue()) {
+        } else if (player1Hand.equals(Hand.PAPER)) {
             // プレイヤーがパーの場合
 
-            if (player2Hand == Hand.STONE.getValue()) {
-                player1Result = Result.WIN.getValue();
-                player2Result = Result.LOSE.getValue();
-            } else if (player2Hand == Hand.PAPER.getValue()) {
-                player1Result = Result.DRAW.getValue();
-                player2Result = Result.DRAW.getValue();
+            if (player2Hand.equals(Hand.STONE)) {
+                player1Result = Result.WIN;
+                player2Result = Result.LOSE;
+            } else if (player2Hand.equals(Hand.PAPER)) {
+                player1Result = Result.DRAW;
+                player2Result = Result.DRAW;
             } else {
-                player1Result = Result.LOSE.getValue();
-                player2Result = Result.WIN.getValue();
+                player1Result = Result.LOSE;
+                player2Result = Result.WIN;
             }
 
         } else {
             // プレイヤーがチョキの場合
 
-            if (player2Hand == Hand.STONE.getValue()) {
-                player1Result = Result.LOSE.getValue();
-                player2Result = Result.WIN.getValue();
-            } else if (player2Hand == Hand.PAPER.getValue()) {
-                player1Result = Result.WIN.getValue();
-                player2Result = Result.LOSE.getValue();
+            if (player2Hand.equals(Hand.STONE)) {
+                player1Result = Result.LOSE;
+                player2Result = Result.WIN;
+            } else if (player2Hand.equals(Hand.PAPER)) {
+                player1Result = Result.WIN;
+                player2Result = Result.LOSE;
             } else {
-                player1Result = Result.DRAW.getValue();
-                player2Result = Result.DRAW.getValue();
+                player1Result = Result.DRAW;
+                player2Result = Result.DRAW;
             }
         }
 
-        // 結果を保存
+        // じゃんけんを生成
 
-        File jankensCsv = new File(JANKENS_CSV);
+        val jankensCsv = new File(JANKENS_CSV);
         jankensCsv.createNewFile();
-        long jankenId = countFileLines(JANKENS_CSV) + 1;
-        LocalDateTime playedAt = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd hh:mm:ss");
-        String playedAtStr = formatter.format(playedAt);
-        try (FileWriter fw = new FileWriter(jankensCsv, true);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter pw = new PrintWriter(bw)) {
-            pw.println(jankenId + CSV_DELIMITER + playedAtStr);
+
+        val jankenId = countFileLines(JANKENS_CSV) + 1;
+        val playedAt = LocalDateTime.now();
+        val janken = new Janken(jankenId, playedAt);
+
+        // じゃんけんを保存
+
+        try (val fw = new FileWriter(jankensCsv, true);
+             val bw = new BufferedWriter(fw);
+             val pw = new PrintWriter(bw)) {
+
+            val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd hh:mm:ss");
+            val playedAtStr = formatter.format(janken.getPlayedAt());
+            pw.println(janken.getId() + CSV_DELIMITER + playedAtStr);
         }
 
-        File jankenDetailsCsv = new File(JANKEN_DETAILS_CSV);
-        jankenDetailsCsv.createNewFile();
-        long jankenDetailsCount = countFileLines(JANKEN_DETAILS_CSV);
-        try (FileWriter fw = new FileWriter(jankenDetailsCsv, true);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter pw = new PrintWriter(bw)) {
+        // じゃんけん明細を生成
 
-            long jankenDetail1Id = jankenDetailsCount + 1;
-            writeJankenDetail(pw, jankenDetail1Id, jankenId, PLAYER_1_ID, player1Hand, player1Result);
-            long jankenDetail2Id = jankenDetailsCount + 2;
-            writeJankenDetail(pw, jankenDetail2Id, jankenId, PLAYER_2_ID, player2Hand, player2Result);
+        val jankenDetailsCsv = new File(JANKEN_DETAILS_CSV);
+        jankenDetailsCsv.createNewFile();
+        val jankenDetailsCount = countFileLines(JANKEN_DETAILS_CSV);
+
+        val jankenDetail1Id = jankenDetailsCount + 1;
+        val jankenDetail1 = new JankenDetail(jankenDetail1Id, jankenId, PLAYER_1_ID, player1Hand, player1Result);
+
+        val jankenDetail2Id = jankenDetailsCount + 2;
+        val jankenDetail2 = new JankenDetail(jankenDetail2Id, jankenId, PLAYER_2_ID, player2Hand, player2Result);
+
+        // じゃんけん明細を保存
+
+        try (val fw = new FileWriter(jankenDetailsCsv, true);
+             val bw = new BufferedWriter(fw);
+             val pw = new PrintWriter(bw)) {
+
+            writeJankenDetail(pw, jankenDetail1);
+            writeJankenDetail(pw, jankenDetail2);
         }
 
         // 勝敗の表示
 
         String resultMessage;
-        if (player1Result == Result.WIN.getValue()) {
+        if (player1Result.equals(Result.WIN)) {
             resultMessage = MessageFormat.format(WINNING_MESSAGE_FORMAT, player1Name);
-        } else if (player2Result == Result.WIN.getValue()) {
+        } else if (player2Result.equals(Result.WIN)) {
             resultMessage = MessageFormat.format(WINNING_MESSAGE_FORMAT, player2Name);
         } else {
             resultMessage = DRAW_MESSAGE;
@@ -171,53 +186,43 @@ public class App {
     }
 
     private static long countFileLines(String path) throws IOException {
-        try (Stream<String> stream = Files.lines(Paths.get(path), StandardCharsets.UTF_8)) {
+        try (val stream = Files.lines(Paths.get(path), StandardCharsets.UTF_8)) {
             return stream.count();
         }
     }
 
-    private static int scanHand(String playerName) {
+    private static Hand scanHand(String playerName) {
         while (true) {
             System.out.println(MessageFormat.format(SCAN_PROMPT_MESSAGE_FORMAT, playerName));
-            String inputStr = STDIN_SCANNER.nextLine();
+            val inputStr = STDIN_SCANNER.nextLine();
 
-            // 有効な文字列だけ受け付ける
-            if (inputStr.equals(String.valueOf(Hand.STONE.getValue()))
-                    || inputStr.equals(String.valueOf(Hand.PAPER.getValue()))
-                    || inputStr.equals(String.valueOf(Hand.SCISSORS.getValue()))) {
-                return Integer.parseInt(inputStr);
+            val maybeHand = Arrays.stream(Hand.values())
+                    .filter(hand -> {
+                        val handValueStr = String.valueOf(hand.getValue());
+                        return handValueStr.equals(inputStr);
+                    })
+                    .findFirst();
 
+            if (maybeHand.isPresent()) {
+                return maybeHand.get();
             } else {
                 System.out.println(MessageFormat.format(INVALID_INPUT_MESSAGE_FORMAT, inputStr));
             }
         }
     }
 
-    private static void showHandWithName(int hand, String name) {
-        String handStr;
-        if (hand == Hand.STONE.getValue()) {
-            handStr = Hand.STONE.getName();
-        } else if (hand == Hand.PAPER.getValue()) {
-            handStr = Hand.PAPER.getName();
-        } else {
-            handStr = Hand.SCISSORS.getName();
-        }
-
-        System.out.println(MessageFormat.format(SHOW_HAND_MESSAGE_FORMAT, name, handStr));
+    private static void showHandWithName(Hand hand, String name) {
+        System.out.println(MessageFormat.format(SHOW_HAND_MESSAGE_FORMAT, name, hand.getName()));
     }
 
     private static void writeJankenDetail(PrintWriter pw,
-                                          long jankenDetailId,
-                                          long jankenId,
-                                          int playerId,
-                                          int playerHand,
-                                          int playerResult) {
-        String line = String.join(CSV_DELIMITER,
-                String.valueOf(jankenDetailId),
-                String.valueOf(jankenId),
-                String.valueOf(playerId),
-                String.valueOf(playerHand),
-                String.valueOf(playerResult));
+                                          JankenDetail jankenDetail) {
+        val line = String.join(CSV_DELIMITER,
+                String.valueOf(jankenDetail.getId()),
+                String.valueOf(jankenDetail.getJankenId()),
+                String.valueOf(jankenDetail.getPlayerId()),
+                String.valueOf(jankenDetail.getHand().getValue()),
+                String.valueOf(jankenDetail.getResult().getValue()));
         pw.println(line);
     }
 

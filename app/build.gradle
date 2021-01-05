@@ -54,3 +54,7 @@ jar {
         attributes 'Main-Class': application.mainClass.orNull
     }
 }
+
+dependencyCheck {
+    failBuildOnCVSS = 7.0F
+}

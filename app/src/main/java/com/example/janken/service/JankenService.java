@@ -9,13 +9,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 public class JankenService {
 
     private static final String JANKENS_CSV = ServiceConfigurations.DATA_DIR + "jankens.csv";
     private static final String JANKEN_DETAILS_CSV = ServiceConfigurations.DATA_DIR + "janken_details.csv";
 
-    public Player play(Player player1, Player player2, Hand player1Hand, Hand player2Hand) throws IOException {
+    public Optional<Player> play(Player player1, Player player2, Hand player1Hand, Hand player2Hand) throws IOException {
         // 勝敗判定
 
         Result player1Result;
@@ -107,13 +108,12 @@ public class JankenService {
 
         // 勝敗の表示
 
-        Player winner = null;
         if (player1Result.equals(Result.WIN)) {
-            return player1;
+            return Optional.of(player1);
         } else if (player2Result.equals(Result.WIN)) {
-            return player2;
+            return Optional.of(player2);
         } else {
-            return winner;
+            return Optional.empty();
         }
     }
 

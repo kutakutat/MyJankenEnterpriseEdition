@@ -39,10 +39,10 @@ public class JankenController {
         showHandWithName(player1Hand, player1);
         showHandWithName(player2Hand, player2);
 
-        val winner = jankenService.play(player1, player2, player1Hand, player2Hand);
+        val maybeWinner = jankenService.play(player1, player2, player1Hand, player2Hand);
 
         new View(VIEW_RESOURCE_PREFIX + "result.vm")
-                .with("winner", winner)
+                .with("winner", maybeWinner.orElse(null))
                 .show();
     }
 

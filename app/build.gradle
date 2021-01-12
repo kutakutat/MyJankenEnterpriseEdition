@@ -35,9 +35,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
     // Use JUnit Jupiter Engine for testing.
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    // This dependency is used by the application.
-    implementation 'com.google.guava:guava:29.0-jre'
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
 }
 
 application {
@@ -55,6 +53,9 @@ run {
 }
 
 jar {
+    // 依存関係を含む JAR ファイルをビルドする設定
+    from configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+
     manifest {
         attributes 'Main-Class': application.mainClass.orNull
     }

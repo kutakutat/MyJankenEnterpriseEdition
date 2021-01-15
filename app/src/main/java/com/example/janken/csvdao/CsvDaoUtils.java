@@ -16,7 +16,7 @@ public class CsvDaoUtils {
     static final String CSV_DELIMITER = ",";
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    static long countFileLines(String path) throws IOException {
+    static long countFileLines(String path) {
         val file = new File(path);
 
         try {

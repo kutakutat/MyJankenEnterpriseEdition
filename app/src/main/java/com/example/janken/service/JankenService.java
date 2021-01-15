@@ -1,20 +1,19 @@
 package com.example.janken.service;
 
+import com.example.janken.csvdao.JankenCsvDao;
+import com.example.janken.csvdao.JankenDetailCsvDao;
 import com.example.janken.model.*;
 import lombok.val;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 public class JankenService {
 
-    private static final String JANKENS_CSV = ServiceConfigurations.DATA_DIR + "jankens.csv";
-    private static final String JANKEN_DETAILS_CSV = ServiceConfigurations.DATA_DIR + "janken_details.csv";
+    private JankenCsvDao jankenCsvDao = new JankenCsvDao();
+    private JankenDetailCsvDao jankenDetailCsvDao = new JankenDetailCsvDao();
 
     public Optional<Player> play(Player player1, Player player2, Hand player1Hand, Hand player2Hand) throws IOException {
         // 勝敗判定
@@ -66,45 +65,21 @@ public class JankenService {
 
         // じゃんけんを生成
 
-        val jankensCsv = new File(JANKENS_CSV);
-        jankensCsv.createNewFile();
-
-        val jankenId = countFileLines(JANKENS_CSV) + 1;
         val playedAt = LocalDateTime.now();
-        val janken = new Janken(jankenId, playedAt);
+        val janken = new Janken(null, playedAt);
 
         // じゃんけんを保存
 
-        try (val fw = new FileWriter(jankensCsv, true);
-             val bw = new BufferedWriter(fw);
-             val pw = new PrintWriter(bw)) {
-
-            val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd hh:mm:ss");
-            val playedAtStr = formatter.format(janken.getPlayedAt());
-            pw.println(janken.getId() + ServiceConfigurations.CSV_DELIMITER + playedAtStr);
-        }
+        val jankenWithId = jankenCsvDao.insert(janken);
 
         // じゃんけん明細を生成
 
-        val jankenDetailsCsv = new File(JANKEN_DETAILS_CSV);
-        jankenDetailsCsv.createNewFile();
-        val jankenDetailsCount = countFileLines(JANKEN_DETAILS_CSV);
-
-        val jankenDetail1Id = jankenDetailsCount + 1;
-        val jankenDetail1 = new JankenDetail(jankenDetail1Id, jankenId, player1.getId(), player1Hand, player1Result);
-
-        val jankenDetail2Id = jankenDetailsCount + 2;
-        val jankenDetail2 = new JankenDetail(jankenDetail2Id, jankenId, player2.getId(), player2Hand, player2Result);
+        val jankenDetail1 = new JankenDetail(null, jankenWithId.getId(), player1.getId(), player1Hand, player1Result);
+        val jankenDetail2 = new JankenDetail(null, jankenWithId.getId(), player2.getId(), player2Hand, player2Result);
+        val jankenDetails = List.of(jankenDetail1, jankenDetail2);
 
         // じゃんけん明細を保存
-
-        try (val fw = new FileWriter(jankenDetailsCsv, true);
-             val bw = new BufferedWriter(fw);
-             val pw = new PrintWriter(bw)) {
-
-            writeJankenDetail(pw, jankenDetail1);
-            writeJankenDetail(pw, jankenDetail2);
-        }
+        jankenDetailCsvDao.insertAll(jankenDetails);
 
         // 勝敗の表示
 
@@ -115,22 +90,5 @@ public class JankenService {
         } else {
             return Optional.empty();
         }
-    }
-
-    private static long countFileLines(String path) throws IOException {
-        try (val stream = Files.lines(Paths.get(path), StandardCharsets.UTF_8)) {
-            return stream.count();
-        }
-    }
-
-    private static void writeJankenDetail(PrintWriter pw,
-                                          JankenDetail jankenDetail) {
-        val line = String.join(ServiceConfigurations.CSV_DELIMITER,
-                String.valueOf(jankenDetail.getId()),
-                String.valueOf(jankenDetail.getJankenId()),
-                String.valueOf(jankenDetail.getPlayerId()),
-                String.valueOf(jankenDetail.getHand().getValue()),
-                String.valueOf(jankenDetail.getResult().getValue()));
-        pw.println(line);
     }
 }

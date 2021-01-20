@@ -1,5 +1,10 @@
 package com.example.janken;
 
+import com.example.janken.infrastructure.csvdao.JankenCsvDao;
+import com.example.janken.infrastructure.csvdao.JankenDetailCsvDao;
+import com.example.janken.domain.model.Hand;
+import com.example.janken.domain.model.JankenDetail;
+import com.example.janken.domain.model.Result;
 import lombok.val;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -8,9 +13,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +30,9 @@ class AppTest {
     private static PrintStream defaultStdout = System.out;
     private static StandardInputSnatcher stdinSnatcher;
     private static StandardOutputSnatcher stdoutSnatcher;
+
+    private static JankenCsvDao jankenCsvDao = new JankenCsvDao();
+    private static JankenDetailCsvDao jankenDetailCsvDao = new JankenDetailCsvDao();
 
     @BeforeAll
     static void setup() {
@@ -55,26 +60,21 @@ class AppTest {
             "2, 1, SCISSORS, PAPER, Alice win !!!, 0, 1",
             "2, 2, SCISSORS, SCISSORS, DRAW !!!, 2, 2"
     })
-    void 正常な入力でじゃんけんが実行され結果が保存される(int player1HandNum,
-                                  int player2HandNum,
+    void 正常な入力でじゃんけんが実行され結果が保存される(int player1HandValue,
+                                  int player2HandValue,
                                   String player1HandName,
                                   String player2HandName,
                                   String resultMessage,
-                                  int player1Result,
-                                  int player2Result) throws IOException {
+                                  int player1ResultValue,
+                                  int player2ResultValue) throws IOException {
 
         // 準備
 
-        stdinSnatcher.inputLine(String.valueOf(player1HandNum));
-        stdinSnatcher.inputLine(String.valueOf(player2HandNum));
+        stdinSnatcher.inputLine(String.valueOf(player1HandValue));
+        stdinSnatcher.inputLine(String.valueOf(player2HandValue));
 
-        val jankensCsv = new File(JANKENS_CSV);
-        jankensCsv.createNewFile();
-        val jankensCsvLengthBeforeTest = countFileLines(JANKENS_CSV);
-
-        val jankenDetailsCsv = new File(JANKEN_DETAILS_CSV);
-        jankenDetailsCsv.createNewFile();
-        val jankenDetailsCsvLengthBeforeTest = countFileLines(JANKEN_DETAILS_CSV);
+        val jankensCountBeforeTest = jankenCsvDao.count();
+        val jankenDetailsCountBeforeTest = jankenDetailCsvDao.count();
 
         // 実行
 
@@ -101,24 +101,36 @@ class AppTest {
         assertEquals(expectedStdout, actualStdout, "標準出力の内容が想定通りであること");
 
         // じゃんけんデータの CSV の検証
-        val appendedJankenId = jankensCsvLengthBeforeTest + 1;
-        assertEquals(appendedJankenId, countFileLines(JANKENS_CSV),
-                "じゃんけんデータの CSV に 1 行追加されたこと");
-        val jankenCsvLine = readSpecifiedLineByFile(JANKENS_CSV, jankensCsvLengthBeforeTest + 1);
-        assertTrue(jankenCsvLine.matches(appendedJankenId + ",\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2}"),
-                "じゃんけんデータの CSV に追加された内容が想定通りであること");
+        assertEquals(jankensCountBeforeTest + 1, jankenCsvDao.count(), "じゃんけんが 1 件追加されたこと");
+        val expectedJankenId = jankensCountBeforeTest + 1;
+        val savedJanken = jankenCsvDao.findById(jankensCountBeforeTest + 1);
+        assertTrue(savedJanken.isPresent(), "じゃんけんが保存されていること");
 
         // じゃんけん明細データの CSV の検証
-        assertEquals(jankenDetailsCsvLengthBeforeTest + 2, countFileLines(JANKEN_DETAILS_CSV),
-                "じゃんけん明細データの CSV に 2 行追加されたこと");
-        val jankenDetailsCsvAppendedLine1 = (jankenDetailsCsvLengthBeforeTest + 1) + "," + appendedJankenId + ",1," + player1HandNum + "," + player1Result;
-        assertEquals(jankenDetailsCsvAppendedLine1,
-                readSpecifiedLineByFile(JANKEN_DETAILS_CSV, jankenDetailsCsvLengthBeforeTest + 1),
-                "じゃんけん明細データの CSV に追加された 1 行目の内容が想定通りであること");
-        val jankenDetailsCsvAppendedLine2 = (jankenDetailsCsvLengthBeforeTest + 2) + "," + appendedJankenId + ",2," + player2HandNum + "," + player2Result;
-        assertEquals(jankenDetailsCsvAppendedLine2,
-                readSpecifiedLineByFile(JANKEN_DETAILS_CSV, jankenDetailsCsvLengthBeforeTest + 2),
-                "じゃんけん明細データの CSV に追加された 2 行目の内容が想定通りであること");
+        assertEquals(jankenDetailsCountBeforeTest + 2, jankenDetailCsvDao.count(),
+                "じゃんけん明細が 2 行件追加されたこと");
+
+        val expectedJankenDetail1Id = jankenDetailsCountBeforeTest + 1;
+        val expectedJankenDetail1 = new JankenDetail(
+                expectedJankenDetail1Id,
+                expectedJankenId,
+                1L,
+                Hand.of(player1HandValue),
+                Result.of(player1ResultValue));
+        val savedJankenDetail1 = jankenDetailCsvDao.findById(expectedJankenDetail1Id);
+        assertEquals(expectedJankenDetail1, savedJankenDetail1.get(),
+                "じゃんけん明細に追加された 1 件目の内容が想定通りであること");
+
+        val expectedJankenDetail2Id = jankenDetailsCountBeforeTest + 2;
+        val expectedJankenDetail2 = new JankenDetail(
+                expectedJankenDetail2Id,
+                expectedJankenId,
+                2L,
+                Hand.of(player2HandValue),
+                Result.of(player2ResultValue));
+        val savedJankenDetail2 = jankenDetailCsvDao.findById(expectedJankenDetail2Id);
+        assertEquals(expectedJankenDetail2, savedJankenDetail2.get(),
+                "じゃんけん明細に追加された 2 件目の内容が想定通りであること");
     }
 
     @ParameterizedTest
@@ -164,22 +176,6 @@ class AppTest {
 
         assertEquals(expected, actual);
     }
-
-    private static long countFileLines(String path) throws IOException {
-        try (val stream = Files.lines(Paths.get(path), StandardCharsets.UTF_8)) {
-            return stream.count();
-        }
-    }
-
-    private static String readSpecifiedLineByFile(String path, long index) throws IOException {
-        try (val stream = Files.lines(Paths.get(path), StandardCharsets.UTF_8)) {
-            return stream.limit(index)
-                    .skip(index - 1)
-                    .findFirst()
-                    .orElseThrow(IllegalArgumentException::new);
-        }
-    }
-
 }
 
 class StandardInputSnatcher extends InputStream {

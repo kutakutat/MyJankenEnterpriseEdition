@@ -1,10 +1,11 @@
-package com.example.janken.controller;
+package com.example.janken.presentation.controller;
 
+import com.example.janken.framework.ServiceLocator;
 import com.example.janken.framework.View;
-import com.example.janken.model.Hand;
-import com.example.janken.model.Player;
-import com.example.janken.service.JankenService;
-import com.example.janken.service.PlayerService;
+import com.example.janken.domain.model.Hand;
+import com.example.janken.domain.model.Player;
+import com.example.janken.application.JankenService;
+import com.example.janken.application.PlayerService;
 import lombok.val;
 
 import java.io.IOException;
@@ -22,8 +23,8 @@ public class JankenController {
 
     private static final String VIEW_RESOURCE_PREFIX = "view/";
 
-    private PlayerService playerService = new PlayerService();
-    private JankenService jankenService = new JankenService();
+    private PlayerService playerService = ServiceLocator.resolve(PlayerService.class);
+    private JankenService jankenService = ServiceLocator.resolve(JankenService.class);
 
     public void play() throws IOException {
 

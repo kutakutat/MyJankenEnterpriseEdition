@@ -1,8 +1,9 @@
-package com.example.janken.service;
+package com.example.janken.application;
 
-import com.example.janken.csvdao.JankenCsvDao;
-import com.example.janken.csvdao.JankenDetailCsvDao;
-import com.example.janken.model.*;
+import com.example.janken.domain.dao.JankenDao;
+import com.example.janken.domain.dao.JankenDetailDao;
+import com.example.janken.domain.model.*;
+import com.example.janken.framework.ServiceLocator;
 import lombok.val;
 
 import java.io.IOException;
@@ -12,8 +13,8 @@ import java.util.Optional;
 
 public class JankenService {
 
-    private JankenCsvDao jankenCsvDao = new JankenCsvDao();
-    private JankenDetailCsvDao jankenDetailCsvDao = new JankenDetailCsvDao();
+    private JankenDao jankenCsvDao = ServiceLocator.resolve((JankenDao.class));
+    private JankenDetailDao jankenDetailCsvDao = ServiceLocator.resolve((JankenDetailDao.class));
 
     public Optional<Player> play(Player player1, Player player2, Hand player1Hand, Hand player2Hand) throws IOException {
         // 勝敗判定

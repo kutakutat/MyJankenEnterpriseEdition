@@ -1,8 +1,9 @@
-package com.example.janken.csvdao;
+package com.example.janken.infrastructure.csvdao;
 
-import com.example.janken.model.Hand;
-import com.example.janken.model.JankenDetail;
-import com.example.janken.model.Result;
+import com.example.janken.domain.dao.JankenDetailDao;
+import com.example.janken.domain.model.Hand;
+import com.example.janken.domain.model.JankenDetail;
+import com.example.janken.domain.model.Result;
 import lombok.val;
 
 import java.io.*;
@@ -13,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class JankenDetailCsvDao {
+public class JankenDetailCsvDao implements JankenDetailDao {
     private static final String JANKEN_DETAILS_CSV = CsvDaoUtils.DATA_DIR + "janken_details.csv";
 
     public Optional<JankenDetail> findById(long id) {

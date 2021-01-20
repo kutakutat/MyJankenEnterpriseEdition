@@ -1,4 +1,4 @@
-package com.example.janken.service;
+package com.example.janken.application;
 
 public class ServiceConfigurations {
     private static final String DEFAULT_DATA_DIR = System.getProperty("user.dir") + "/../data/";
